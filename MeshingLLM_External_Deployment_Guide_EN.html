@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeshingLLM — External Deployment & Reproduction Guide</title>
+<style>
+  :root {
+    --accent: #c8102e;
+    --accent-light: #fce8eb;
+    --text: #1a1a1a;
+    --code-bg: #f6f8fa;
+    --code-text: #24292e;
+    --blockquote: #f0f7ff;
+    --border: #e1e4e8;
+    --link: #0366d6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.65;
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 32px 40px 80px;
+    color: var(--text);
+    background: #fff;
+  }
+  h1 {
+    font-size: 32px;
+    border-bottom: 3px solid var(--accent);
+    padding-bottom: 12px;
+    margin-top: 0;
+    color: var(--accent);
+  }
+  h2 {
+    font-size: 24px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+    margin-top: 48px;
+    color: #222;
+  }
+  h3 { font-size: 19px; margin-top: 28px; color: #333; }
+  h4 { font-size: 16px; margin-top: 18px; color: #444; }
+  p { margin: 10px 0; }
+  code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: "SF Mono", Monaco, Consolas, "Courier New", monospace;
+    font-size: 0.88em;
+    color: var(--code-text);
+    border: 1px solid var(--border);
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 16px 20px;
+    border-radius: 6px;
+    overflow-x: auto;
+    border-left: 4px solid var(--accent);
+    margin: 14px 0;
+    line-height: 1.5;
+  }
+  pre code {
+    background: transparent;
+    padding: 0;
+    border: none;
+    font-size: 0.88em;
+    color: var(--code-text);
+  }
+  blockquote {
+    background: var(--blockquote);
+    border-left: 4px solid var(--accent);
+    padding: 12px 18px;
+    margin: 14px 0;
+    color: #444;
+    border-radius: 0 4px 4px 0;
+  }
+  blockquote code {
+    background: rgba(255,255,255,0.6);
+  }
+  table {
+    border-collapse: collapse;
+    margin: 14px 0;
+    width: 100%;
+    font-size: 0.92em;
+  }
+  th {
+    background: var(--accent-light);
+    color: var(--accent);
+    padding: 10px 14px;
+    text-align: left;
+    border: 1px solid var(--border);
+    font-weight: 600;
+  }
+  td {
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+  }
+  tbody tr:nth-child(even) { background: #fafafa; }
+  ul, ol { padding-left: 24px; }
+  li { margin: 4px 0; }
+  hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 32px 0;
+  }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* TOC */
+  .toc {
+    background: #f9fafb;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 24px;
+    margin: 20px 0 36px;
+  }
+  .toc h2 {
+    font-size: 16px;
+    border: none;
+    margin: 0 0 12px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .toc ol { padding-left: 20px; margin: 0; }
+  .toc li { margin: 4px 0; }
+  .toc a { color: #444; }
+
+  /* Header banner */
+  .banner {
+    background: linear-gradient(135deg, var(--accent) 0%, #a00c25 100%);
+    color: white;
+    padding: 18px 24px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+  .banner strong { font-size: 16px; }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <strong>📘 MeshingLLM · External Deployment &amp; Reproduction Guide</strong><br>
+  For reviewers, collaborators, and external researchers. v3-GPU.
+</div>
+
+<h1 id="meshingllm-reproduction-deployment-guide-external-release">MeshingLLM · Reproduction & Deployment Guide (External Release)</h1>
+
+<blockquote>**Audience.** Reviewers, collaborators, and external researchers who want to reproduce or build on the MeshingLLM results reported in our ICEBE 2026 submission.</blockquote>
+<p>></p>
+<blockquote>**Companion artifact.** This guide ships together with the `MeshingLLM_Code_v3_GPU.zip` code archive (or the `experiment_code/` directory). Together they are sufficient to reproduce every number in §5 of the paper.</blockquote>
+<p>></p>
+<blockquote>**TL;DR.** *Two paths:* `bash run_all_gpu.sh` on a rented RTX 4090 (recommended, ~2-3 hours, ~¥5 cloud spend) or `python train_eval.py --mode all` on a CPU laptop (slower, with a smaller model for sanity-check only).</blockquote>
+
+<hr>
+
+<h2 id="table-of-contents">Table of Contents</h2>
+
+<p>1. <a href="#1-what-this-package-reproduces">What this package reproduces</a></p>
+<p>2. <a href="#2-hardware--software-requirements">Hardware & software requirements</a></p>
+<p>3. <a href="#3-whats-inside-the-code-package">What's inside the code package</a></p>
+<p>4. <a href="#4-quick-start-one-command-reproduce">Quick start (one-command reproduce)</a></p>
+<p>5. <a href="#5-step-by-step-cpu-laptop-sanity-check">Step-by-step: CPU laptop (sanity check)</a></p>
+<p>6. <a href="#6-step-by-step-cloud-gpu-paper-grade-run">Step-by-step: cloud GPU (paper-grade run)</a></p>
+<p>7. <a href="#7-dataset-acquisition--preprocessing">Dataset acquisition & preprocessing</a></p>
+<p>8. <a href="#8-how-to-read-the-results">How to read the results</a></p>
+<p>9. <a href="#9-parameter-tuning--ablation-knobs">Parameter tuning & ablation knobs</a></p>
+<p>10. <a href="#10-troubleshooting-faq">Troubleshooting FAQ</a></p>
+<p>11. <a href="#11-citation">Citation</a></p>
+
+<hr>
+
+<h2 id="1-what-this-package-reproduces">1. What this package reproduces</h2>
+
+<p>The package reproduces all experiments reported in <strong>§5 Experimental Evaluation</strong>:</p>
+
+<table>
+<thead><tr>
+<th>Section</th>
+<th>Experiment</th>
+<th>What you get</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>§5.2</td>
+<td>Reconstruction fidelity & compression ratio (CR)</td>
+<td>Table I</td>
+</tr>
+<tr>
+<td>§5.3</td>
+<td>Cross-segment transfer on 6 e-commerce segment pairs</td>
+<td>Table III</td>
+</tr>
+<tr>
+<td>§5.4</td>
+<td>Frequency selection ablation (energy-only vs. energy+gradient)</td>
+<td>Table II</td>
+</tr>
+<tr>
+<td>§5.5</td>
+<td>Theoretical vs. measured CR gap discussion</td>
+<td>supporting tables</td>
+</tr>
+</tbody>
+</table>
+
+<p>It also ships a <strong>smoke test</strong> that verifies <code>meshing.py</code> (the core Π<sub>θ</sub> / Γ<sub>D</sub> implementation, Defs 1-4 in the paper) produces numerically correct outputs on synthetic tensors.</p>
+
+<hr>
+
+<h2 id="2-hardware-software-requirements">2. Hardware & software requirements</h2>
+
+<h3 id="2-1-two-supported-configurations">2.1 Two supported configurations</h3>
+
+<table>
+<thead><tr>
+<th>Mode</th>
+<th>When to use</th>
+<th>Hardware</th>
+<th>Software</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>**CPU mode** (sanity check)</td>
+<td>local laptop, no GPU, < 30 min validation</td>
+<td>x86_64, 16 GB RAM, 20 GB disk</td>
+<td>Python 3.10+, PyTorch CPU, Linux/macOS/Windows</td>
+</tr>
+<tr>
+<td>**GPU mode** (paper-grade)</td>
+<td>reproducing paper numbers, ~2-3 h wall time</td>
+<td>1× NVIDIA RTX 4090 (24 GB) or equivalent (A100, 3090 also OK)</td>
+<td>Python 3.10, PyTorch cu124, CUDA 12.8 driver</td>
+</tr>
+</tbody>
+</table>
+
+<blockquote>**Glossary** for readers new to ML tooling:</blockquote>
+<blockquote>- *CUDA* — NVIDIA's GPU programming layer; you need both a CUDA-capable GPU **and** a CUDA-enabled PyTorch build.</blockquote>
+<blockquote>- *cu124* — PyTorch prebuilt for CUDA 12.4. Compatible with CUDA driver ≥ 12.4 (we test on 12.8).</blockquote>
+<blockquote>- *venv / conda* — "isolated rooms" that keep this project's packages from clashing with other Python projects on your machine.</blockquote>
+<blockquote>- *pip* — Python's package installer; the command-line tool that downloads `transformers`, `torch`, etc.</blockquote>
+
+<h3 id="2-2-required-python-packages">2.2 Required Python packages</h3>
+
+<table>
+<thead><tr>
+<th>Package</th>
+<th>Why we need it</th>
+<th>Tested version</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>`torch`</td>
+<td>model loading & training</td>
+<td>2.4.0+cu124 (GPU) / 2.4.0 (CPU)</td>
+</tr>
+<tr>
+<td>`transformers`</td>
+<td>Qwen2.5 backbone, tokenizer</td>
+<td>≥ 4.44</td>
+</tr>
+<tr>
+<td>`datasets`</td>
+<td>load FinanceBench / MMLU / Amazon / SHOPPING-Intent from HuggingFace</td>
+<td>latest</td>
+</tr>
+<tr>
+<td>`peft`</td>
+<td>LoRA-r8 baseline</td>
+<td>latest</td>
+</tr>
+<tr>
+<td>`scipy`</td>
+<td>`dctn`, `idctn`, `qr`, `cholesky` in `meshing.py`</td>
+<td>≥ 1.11</td>
+</tr>
+<tr>
+<td>`pandas`, `scikit-learn`, `numpy`</td>
+<td>metrics & tabular output</td>
+<td>latest</td>
+</tr>
+<tr>
+<td>`accelerate`</td>
+<td>multi-GPU & FP16 device-map</td>
+<td>latest</td>
+</tr>
+<tr>
+<td>`auto-gptq`</td>
+<td>**optional** — INT4-GPTQ baseline; if install fails, the script silently falls back to *simulated* quantization</td>
+<td>optional</td>
+</tr>
+</tbody>
+</table>
+
+<p>Total disk footprint after install: <strong>~6 GB</strong> (mostly the Qwen2.5-7B weights).</p>
+
+<hr>
+
+<h2 id="3-what-s-inside-the-code-package">3. What's inside the code package</h2>
+
+<p>After unzipping, you will see this structure (top-level directory is <code>MeshingLLM_Code/</code>):</p>
+
+<pre><code>MeshingLLM_Code/
+├── config.py            # Central configuration (single source of truth for hyper-params).
+│                        # Switch CPU↔GPU by setting env var MESHINGLLM_GPU=1.
+│
+├── meshing.py           # Core algorithm. Implements:
+│                        #   Def 1  Trigonometric projection operator Π_θ
+│                        #   Def 2  Domain meshing profile Γ_D
+│                        #   Def 3  Meshing operation
+│                        #   Def 4  Intra-domain homogeneity-heterogeneity (Γ_shared ⊙ Γ_sub)
+│                        # Pure numpy + scipy. No model / GPU needed.
+│                        # Run `python meshing.py` for a self-contained smoke test.
+│
+├── data_prep.py         # Downloads 4 datasets from HuggingFace and slices them
+│                        # into per-segment JSONL files under `data/&lt;segment&gt;/`.
+│                        # Honors HF_ENDPOINT env var (set to https://hf-mirror.com in CN).
+│
+├── train_eval.py        # Main training &amp; evaluation driver. Two modes:
+│                        #   --mode spectral_peft  → FouRA / SeLoRA / LoCA baselines only
+│                        #   --mode all            → everything: baselines + MeshingLLM
+│                        #                            + cross-segment transfer + ablation
+│
+├── dp_variant.py        # Optional differential-privacy variant; not run for the
+│                        # conference submission, kept for future work.
+│
+├── stats_analysis.py    # Aggregates results.jsonl into:
+│                        #   - tables/accuracy_table.md  (mean ± std, 95% CI)
+│                        #   - tables/accuracy_compare.csv (paired t / Wilcoxon + Holm)
+│
+├── run_all.sh           # One-command pipeline for CPU mode.
+├── run_all_gpu.sh       # ⭐ One-command pipeline for GPU mode (recommended).
+│
+└── README.md            # The original internal README (kept verbatim for traceability).</code></pre>
+
+<p><strong>File size reference.</strong> The full archive is ~32 KB compressed, ~80 KB uncompressed; only <code>outputs/results.jsonl</code> (created at runtime) is large (~tens of MB).</p>
+
+<hr>
+
+<h2 id="4-quick-start-one-command-reproduce">4. Quick start (one-command reproduce)</h2>
+
+<p>If you have <strong>any</strong> Linux/macOS terminal, a CUDA-capable GPU, and the unzipped folder:</p>
+
+<pre class="lang-bash"><code>cd path/to/MeshingLLM_Code
+export MESHINGLLM_GPU=1                  # ← the only knob you must set
+export HF_ENDPOINT=https://hf-mirror.com # ← only if you are in mainland China
+bash run_all_gpu.sh</code></pre>
+
+<p>The script auto-detects its own directory, installs missing dependencies, downloads datasets, runs the smoke test, runs all experiments, and prints the location of the result files at the end.</p>
+
+<p><strong>Expected wall time on RTX 4090 (24 GB):</strong></p>
+
+<table>
+<thead><tr>
+<th>Stage</th>
+<th>Time</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Dependency install</td>
+<td>3-5 min</td>
+</tr>
+<tr>
+<td>Dataset download (4 datasets, ~600 MB)</td>
+<td>5-10 min</td>
+</tr>
+<tr>
+<td>Smoke test</td>
+<td>< 10 s</td>
+</tr>
+<tr>
+<td>Spectral-PEFT baselines (FouRA/SeLoRA/LoCA)</td>
+<td>10-15 min</td>
+</tr>
+<tr>
+<td>Full MeshingLLM + main baselines + cross-segment + ablation</td>
+<td>25-40 min</td>
+</tr>
+<tr>
+<td>Stats & tables</td>
+<td>< 30 s</td>
+</tr>
+<tr>
+<td>**Total**</td>
+<td>**~50-75 min**</td>
+</tr>
+</tbody>
+</table>
+
+<hr>
+
+<h2 id="5-step-by-step-cpu-laptop-sanity-check">5. Step-by-step: CPU laptop (sanity check)</h2>
+
+<p>The CPU path is for fast validation that the code runs end-to-end on your machine. It uses a <strong>smaller model</strong> (Qwen2.5-1.5B instead of 7B), smaller matrices, and fewer meshed layers, so the absolute numbers are <em>not</em> what the paper reports — they are an order-of-magnitude check.</p>
+
+<h3 id="5-1-pick-an-environment-tool">5.1 Pick an environment tool</h3>
+
+<p>You have three equivalent ways to run Python. Pick whichever you already have:</p>
+
+<table>
+<thead><tr>
+<th>Tool</th>
+<th>What it looks like</th>
+<th>Best for</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>**Anaconda Prompt**</td>
+<td>a black window with `(base)` in the prompt</td>
+<td>Windows users new to Python</td>
+</tr>
+<tr>
+<td>**Jupyter Notebook / JupyterLab**</td>
+<td>browser-based cells</td>
+<td>interactive exploration</td>
+</tr>
+<tr>
+<td>**CMD / PowerShell**</td>
+<td>the standard Windows terminal</td>
+<td>users already comfortable with command-line</td>
+</tr>
+<tr>
+<td>**PyCharm**</td>
+<td>an IDE with its own Terminal pane</td>
+<td>users who prefer an editor</td>
+</tr>
+</tbody>
+</table>
+
+<blockquote>*PyCharm note:* open the project folder via *File → Open → select `MeshingLLM_Code/`*; PyCharm will treat it as a "pure-Python" project. There is no `.idea/` config in the archive.</blockquote>
+
+<h3 id="5-2-create-an-isolated-environment-recommended">5.2 Create an isolated environment (recommended)</h3>
+
+<p>Pick one of the three commands below — they all do the same thing:</p>
+
+<pre class="lang-bash"><code># Option A — conda (Anaconda Prompt):
+conda create -n meshingllm python=3.10 -y
+conda activate meshingllm
+
+# Option B — Python&#x27;s built-in venv (CMD / PowerShell / Linux):
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# macOS / Linux:
+source .venv/bin/activate
+
+# Option C — system Python (skip if you already know what you&#x27;re doing):
+#   on a clean machine you can skip, but mixing with other projects may cause
+#   &quot;pip complains about a dependency conflict&quot; errors.</code></pre>
+
+<blockquote>*Why bother?* An isolated environment prevents "works on my machine" surprises when you also have, say, an older PyTorch for another paper.</blockquote>
+
+<h3 id="5-3-install-cpu-only-pytorch-and-the-rest">5.3 Install CPU-only PyTorch and the rest</h3>
+
+<p>In the same terminal (with <code>(meshingllm)</code> or <code>(.venv)</code> shown in the prompt):</p>
+
+<pre class="lang-bash"><code># PyTorch (CPU build, ~250 MB)
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+# Everything else
+pip install &quot;transformers&gt;=4.44&quot; datasets peft scipy pandas scikit-learn numpy accelerate
+
+# auto-gptq needs CUDA → skip on CPU; the script will fall back automatically.</code></pre>
+
+<h3 id="5-4-get-the-code">5.4 Get the code</h3>
+
+<p>Either unzip <code>MeshingLLM_Code_v3_GPU.zip</code>, or <code>git clone</code> if you have access. Either way, <code>cd</code> into the folder:</p>
+
+<pre class="lang-bash"><code>cd path/to/MeshingLLM_Code
+# On Windows backslashes look like: cd C:\Users\you\Downloads\MeshingLLM_Code</code></pre>
+
+<h3 id="5-5-run-the-smoke-test-first">5.5 Run the smoke test first</h3>
+
+<p>This verifies the core math is intact on your machine before you commit to a long run:</p>
+
+<pre class="lang-bash"><code>python meshing.py</code></pre>
+
+<p><strong>Expected output (truncated):</strong></p>
+
+<pre><code>[meshing] smoke test: dct2d ↔ idct2d round-trip OK, max err = 1.5e-15
+[meshing] QR-derived triangular mask shape = (256, 256), nnz = 16384
+[meshing] AND-intersection mask density = 0.093 (target ~0.093), CR ≈ 10.75×
+[meshing] Gamma fidelity = 0.9996 (target ≥ 0.999)
+[meshing] smoke test PASSED ✅</code></pre>
+
+<p>If you see <code>smoke test PASSED ✅</code>, proceed. If you see a NumPy/SciPy error, jump to <a href="#10-troubleshooting-faq">§10 FAQ</a>.</p>
+
+<h3 id="5-6-download-datasets">5.6 Download datasets</h3>
+
+<pre class="lang-bash"><code>python data_prep.py</code></pre>
+
+<p>Datasets are cached under <code>./data/</code>. On a typical connection this takes 3-8 minutes. <strong>Total cached size: ~600 MB.</strong></p>
+
+<h3 id="5-7-run-all-experiments-cpu-mode">5.7 Run all experiments (CPU mode)</h3>
+
+<pre class="lang-bash"><code># Make sure MESHINGLLM_GPU is unset or =0
+unset MESHINGLLM_GPU        # Linux / macOS
+# Windows CMD: set MESHINGLLM_GPU=0
+# Windows PowerShell: $env:MESHINGLLM_GPU=&quot;0&quot;
+
+python train_eval.py --mode all</code></pre>
+
+<p>Expected runtime: <strong>30-90 minutes</strong> on a modern 8-core laptop, depending on disk speed.</p>
+
+<h3 id="5-8-generate-summary-tables">5.8 Generate summary tables</h3>
+
+<pre class="lang-bash"><code>python stats_analysis.py --results ./outputs/results.jsonl --metric accuracy --target &quot;MeshingLLM (L2)&quot;</code></pre>
+
+<p>This writes:</p>
+<ul>
+<li>`outputs/tables/accuracy_table.md` — Markdown table with `mean ± std` and 95 % CI</li>
+<li>`outputs/tables/accuracy_compare.csv` — pairwise comparisons with Holm correction</li>
+</ul>
+<hr>
+
+<h2 id="6-step-by-step-cloud-gpu-paper-grade-run">6. Step-by-step: cloud GPU (paper-grade run)</h2>
+
+<h3 id="6-1-recommended-cloud-provider">6.1 Recommended cloud provider</h3>
+
+<p>We tested on <strong>AutoDL</strong> (https://www.autodl.com/) using a single RTX 4090 (24 GB) instance. The same <code>bash run_all_gpu.sh</code> script runs unchanged on any CUDA 12.4+ GPU (A100, H100, RTX 3090, etc.) — just pick whichever has the lowest hourly price.</p>
+
+<p>Typical cost on AutoDL at the time of submission: <strong>~¥5 for a full reproduction run.</strong></p>
+
+<h3 id="6-2-provisioning-the-instance">6.2 Provisioning the instance</h3>
+
+<p>1. Sign up at https://www.autodl.com/ and complete ID verification (required by Chinese regulations).</p>
+<p>2. From the console, click <strong>"租用新实例"</strong> (Rent a new instance).</p>
+<p>3. Choose:</p>
+<ul>
+<li>**GPU model:** RTX 4090 (24 GB) — cheapest that fits Qwen2.5-7B in FP16.</li>
+<li>**Image:** PyTorch 2.1.0 / Python 3.10 (community image — has CUDA pre-installed).</li>
+<li>**Disk:** at least 50 GB system + 50 GB data.</li>
+</ul>
+<p>4. Click <strong>"创建"</strong> (Create); the instance starts in ~30 seconds.</p>
+
+<h3 id="6-3-upload-the-code">6.3 Upload the code</h3>
+
+<p>Two equivalent options:</p>
+
+<table>
+<thead><tr>
+<th>Method</th>
+<th>How</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>**JupyterLab** (browser, recommended)</td>
+<td>Click the **"JupyterLab"** button on the instance card → upload `MeshingLLM_Code_v3_GPU.zip` into `/root/autodl-tmp/` → in a terminal cell, run `cd /root/autodl-tmp && unzip MeshingLLM_Code_v3_GPU.zip`</td>
+</tr>
+<tr>
+<td>**SCP** (from your laptop)</td>
+<td>`scp MeshingLLM_Code_v3_GPU.zip root@<your-autodl-host>:/root/autodl-tmp/`</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="6-4-open-a-terminal">6.4 Open a terminal</h3>
+
+<p>Either click <strong>"终端"</strong> (Terminal) on the AutoDL instance card, or open a terminal inside JupyterLab.</p>
+
+<blockquote>⚠️ **Every time you open a new terminal**, remember to (a) `cd` into the project directory and (b) re-export the GPU flag. Sessions don't persist shell variables.</blockquote>
+
+<pre class="lang-bash"><code>cd /root/autodl-tmp/MeshingLLM_Code
+export MESHINGLLM_GPU=1
+export HF_ENDPOINT=https://hf-mirror.com   # skip if not in mainland China</code></pre>
+
+<h3 id="6-5-run-the-full-pipeline">6.5 Run the full pipeline</h3>
+
+<pre class="lang-bash"><code>bash run_all_gpu.sh</code></pre>
+
+<p>The script runs 7 stages with progress markers. Total wall time: ~50-75 min on RTX 4090.</p>
+
+<h3 id="6-6-download-the-results">6.6 Download the results</h3>
+
+<p>When the script finishes it prints:</p>
+
+<pre><code>⭐ 项目路径: /root/autodl-tmp/MeshingLLM_Code
+结果文件：
+  /root/autodl-tmp/MeshingLLM_Code/outputs/results.jsonl
+  /root/autodl-tmp/MeshingLLM_Code/outputs/tables/accuracy_table.md
+  /root/autodl-tmp/MeshingLLM_Code/outputs/tables/accuracy_compare.csv</code></pre>
+
+<p>Download them through JupyterLab (right-click → Download) or:</p>
+
+<pre class="lang-bash"><code># From your laptop, after the run finishes:
+scp root@&lt;host&gt;:/root/autodl-tmp/MeshingLLM_Code/outputs/* ~/Downloads/</code></pre>
+
+<h3 id="6-7-stop-the-instance-to-stop-billing">6.7 Stop the instance to stop billing</h3>
+
+<p>Click <strong>"关机"</strong> (Power off) on the AutoDL console. Data on <code>/root/autodl-tmp/</code> persists across power-off, but is lost once you <strong>release</strong> the instance.</p>
+
+<hr>
+
+<h2 id="7-dataset-acquisition-preprocessing">7. Dataset acquisition & preprocessing</h2>
+
+<p>All four datasets are downloaded from HuggingFace by <code>data_prep.py</code>. No manual preprocessing is required beyond what the script does.</p>
+
+<table>
+<thead><tr>
+<th>Dataset</th>
+<th>HuggingFace ID</th>
+<th>Records</th>
+<th>Used for</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>**FinanceBench**</td>
+<td>`PatronusAI/financebench`</td>
+<td>150 QA (80/20 split — *no* test split exists upstream)</td>
+<td>Table I + cross-domain transfer (source)</td>
+</tr>
+<tr>
+<td>**MMLU – Professional Accounting**</td>
+<td>`cais/mmlu`, subset `professional_accounting`</td>
+<td>282 test items</td>
+<td>Domain-internal auxiliary</td>
+</tr>
+<tr>
+<td>**Amazon Reviews (multi-lingual)**</td>
+<td>`srvmishra832/multilingual-amazon-reviews-6-languages`</td>
+<td>1.2 M, 6 languages, 28 categories</td>
+<td>Segment pairs: `amazon_electronics ↔ amazon_home`, `amazon_cn ↔ amazon_eu`</td>
+</tr>
+<tr>
+<td>**SHOPPING-Intent** (ecommerce intent classification)</td>
+<td>`jtlicardo/ecommerce-intent-6k`</td>
+<td>6 000</td>
+<td>Cross-domain transfer (target)</td>
+</tr>
+</tbody>
+</table>
+
+<blockquote>**Slicing.** `data_prep.py` writes one JSONL per segment under `data/<segment>/`. The MeshingLLM pipeline never reads the raw HuggingFace cache directly; it always goes through these JSONL files so you can audit exactly what went into each experiment.</blockquote>
+
+<blockquote>**Mirror.** If you are in mainland China, set `HF_ENDPOINT=https://hf-mirror.com` before running `data_prep.py` (the `run_all_gpu.sh` script does this automatically). This avoids the well-known HuggingFace connectivity issues in CN.</blockquote>
+
+<blockquote>**Privacy / license.** All four datasets are publicly available for research use under their original licenses. We do not redistribute any of them in the code archive.</blockquote>
+
+<hr>
+
+<h2 id="8-how-to-read-the-results">8. How to read the results</h2>
+
+<h3 id="8-1-raw-results-outputs-results-jsonl">8.1 Raw results: `outputs/results.jsonl`</h3>
+
+<p>One JSON object per line. Fields:</p>
+
+<pre class="lang-json"><code>{
+  &quot;method&quot;: &quot;MeshingLLM (L2)&quot;,
+  &quot;dataset&quot;: &quot;amazon_electronics&quot;,
+  &quot;seed&quot;: 42,
+  &quot;accuracy&quot;: 0.8731,
+  &quot;cr&quot;: 10.84,
+  &quot;vram_gb&quot;: 0.57,
+  &quot;fidelity&quot;: 1.0,
+  &quot;tau&quot;: 0.85,
+  &quot;level&quot;: &quot;L2&quot;,
+  &quot;note&quot;: &quot;and-intersection&quot;
+}</code></pre>
+
+<h3 id="8-2-summary-tables-outputs-tables">8.2 Summary tables: `outputs/tables/`</h3>
+
+<table>
+<thead><tr>
+<th>File</th>
+<th>Format</th>
+<th>Content</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>`accuracy_table.md`</td>
+<td>Markdown</td>
+<td>`mean ± std` and 95 % CI per (method, dataset) cell</td>
+</tr>
+<tr>
+<td>`accuracy_compare.csv`</td>
+<td>CSV</td>
+<td>Pairwise statistical tests (paired t / Wilcoxon) with Holm-Bonferroni correction</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="8-3-mapping-back-to-paper-tables">8.3 Mapping back to paper tables</h3>
+
+<table>
+<thead><tr>
+<th>Paper element</th>
+<th>File to inspect</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Table I (fidelity & CR vs. baselines)</td>
+<td>`accuracy_table.md` filtered to `method ∈ {MeshingLLM (L1/L2/L3), FullFT-approx, LoRA-r8, INT4-GPTQ, FouRA, SeLoRA, LoCA}`</td>
+</tr>
+<tr>
+<td>Table II (frequency-selection ablation)</td>
+<td>filter rows where `note ∈ {energy-only, energy+gradient}`</td>
+</tr>
+<tr>
+<td>Table III (cross-segment transfer, 6 pairs)</td>
+<td>filter rows where `method == "MeshingLLM (L2)"` and `seed ∈ {42, 123}`</td>
+</tr>
+<tr>
+<td>§5.5 discussion</td>
+<td>compare `cr` column against the theoretical `cr_target=16` from `config.py`</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="8-4-what-good-looks-like">8.4 What "good" looks like</h3>
+
+<p>If you are checking that your reproduction is sane, compare against these reference numbers from our 7B run:</p>
+
+<table>
+<thead><tr>
+<th>Method</th>
+<th>Expected accuracy on FinanceBench</th>
+<th>Expected CR</th>
+<th>Notes</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>FullFT-approx</td>
+<td>≈ 90 %</td>
+<td>1×</td>
+<td>ceiling reference</td>
+</tr>
+<tr>
+<td>LoRA-r8</td>
+<td>≈ 75 %</td>
+<td>~1.1×</td>
+<td>strongest PEFT baseline</td>
+</tr>
+<tr>
+<td>MeshingLLM (L2)</td>
+<td>≈ 89 %</td>
+<td>≥ 10×</td>
+<td>within 1-2 pp of FullFT</td>
+</tr>
+<tr>
+<td>INT4-GPTQ</td>
+<td>≈ 36 %</td>
+<td>16×</td>
+<td>quantization ceiling</td>
+</tr>
+<tr>
+<td>FouRA / SeLoRA / LoCA</td>
+<td>≈ 45-50 %</td>
+<td>4-8×</td>
+<td>spectral-PEFT baselines</td>
+</tr>
+</tbody>
+</table>
+
+<p>A reproduction that lands within ±3 pp of these numbers is considered successful.</p>
+
+<hr>
+
+<h2 id="9-parameter-tuning-ablation-knobs">9. Parameter tuning & ablation knobs</h2>
+
+<p>The single source of truth is <code>config.py</code>. Every parameter that affects the paper's tables lives in the <code>Config</code> dataclass.</p>
+
+<table>
+<thead><tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>What it controls</th>
+<th>Knob for what paper section</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>`base_model`</td>
+<td>`Qwen2.5-1.5B` (CPU) / `Qwen2.5-7B` (GPU)</td>
+<td>which backbone</td>
+<td>§5.2</td>
+</tr>
+<tr>
+<td>`tau_energy`</td>
+<td>`0.85`</td>
+<td>energy-threshold τ — *the* compression knob</td>
+<td>§5.2, §5.5</td>
+</tr>
+<tr>
+<td>`k_clusters`</td>
+<td>`4`</td>
+<td>number of clusters in the spectral-clustering strategy</td>
+<td>§5.4 ablation</td>
+</tr>
+<tr>
+<td>`freq_strategy`</td>
+<td>`"energy+gradient"`</td>
+<td>`"energy-only"` / `"energy+gradient"` (the AND-intersection winner)</td>
+<td>§5.4 ablation</td>
+</tr>
+<tr>
+<td>`level`</td>
+<td>`"L2"`</td>
+<td>`L1` / `L2` / `L3` (progressive inference tier)</td>
+<td>§6.2 latency-accuracy curve</td>
+</tr>
+<tr>
+<td>`max_mesh_layers`</td>
+<td>8 / 16</td>
+<td>how many transformer layers get meshed (CPU / GPU)</td>
+<td>scaling analysis</td>
+</tr>
+<tr>
+<td>`max_matrix_dim`</td>
+<td>2048 / 4096</td>
+<td>max dimension of sub-block DCT</td>
+<td>memory vs. fidelity</td>
+</tr>
+<tr>
+<td>`batch_size`</td>
+<td>2 / 4</td>
+<td>training batch</td>
+<td>convergence</td>
+</tr>
+<tr>
+<td>`seeds`</td>
+<td>`(42, 123)`</td>
+<td>random seeds</td>
+<td>statistical significance</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="9-1-switching-between-cpu-and-gpu">9.1 Switching between CPU and GPU</h3>
+
+<p>You do <strong>not</strong> need to edit <code>config.py</code>. Just toggle the environment variable:</p>
+
+<pre class="lang-bash"><code>export MESHINGLLM_GPU=1   # GPU mode: Qwen2.5-7B, cuda, FP16, batch=4, 16 layers, 4096 sub-block
+unset MESHINGLLM_GPU      # CPU mode: Qwen2.5-1.5B, cpu, FP32, batch=2, 8 layers, 2048 sub-block</code></pre>
+
+<p>The first line of <code>config.py</code> reads <code>os.environ["MESHINGLLM_GPU"]</code> and the <code>Config</code> dataclass applies the matching defaults.</p>
+
+<h3 id="9-2-reproducing-an-ablation-cell-from-the-paper">9.2 Reproducing an ablation cell from the paper</h3>
+
+<p>For example, <strong>Table II's "energy-only" row</strong> uses:</p>
+
+<pre class="lang-bash"><code>python train_eval.py --mode all --freq-strategy energy-only</code></pre>
+
+<p>The <code>train_eval.py</code> driver accepts these overrides (CLI flags mirror the dataclass field names).</p>
+
+<h3 id="9-3-sweeping-τ-for-the-cr-vs-fidelity-curve-figure-4-in-the-paper">9.3 Sweeping τ for the CR-vs-fidelity curve (Figure 4 in the paper)</h3>
+
+<p>Edit <code>config.py</code>:</p>
+
+<pre class="lang-python"><code>tau_energy: float = 0.85   # try 0.70 / 0.80 / 0.90 / 0.95 to trace the Pareto frontier</code></pre>
+
+<p>…or pass it via the CLI:</p>
+
+<pre class="lang-bash"><code>for tau in 0.70 0.80 0.85 0.90 0.95; do
+  python train_eval.py --mode all --tau-energy $tau
+done</code></pre>
+
+<p>The expected pattern: <strong>higher τ → higher fidelity, lower CR.</strong></p>
+
+<h3 id="9-4-re-running-only-the-cross-segment-transfer-experiments">9.4 Re-running only the cross-segment transfer experiments</h3>
+
+<pre class="lang-bash"><code>python train_eval.py --mode transfer</code></pre>
+
+<p>This is faster (skips baselines) and is what we recommend if you only want to verify Table III.</p>
+
+<h3 id="9-5-what-you-should-not-edit">9.5 What you should *not* edit</h3>
+
+<ul>
+<li>Anything inside `meshing.py` beyond `topk_frac` in `qr_guided_mask`. The Π<sub>θ</sub> / Γ<sub>D</sub> definitions are load-bearing for the paper's theorems; small numerical drift will silently change Table I.</li>
+<li>Random seeds outside the `seeds` tuple. Different seeds invalidate the Wilcoxon test in `stats_analysis.py`.</li>
+</ul>
+<hr>
+
+<h2 id="10-troubleshooting-faq">10. Troubleshooting FAQ</h2>
+
+<h3 id="q1-python-command-not-found">Q1. `python: command not found`</h3>
+
+<p>Python is not installed or not on PATH. Install Python 3.10 from https://www.python.org/downloads/ and re-open your terminal.</p>
+
+<h3 id="q2-pip-install-torch-is-extremely-slow-hangs">Q2. `pip install torch` is extremely slow / hangs</h3>
+
+<p>You are likely being rate-limited by PyPI. Either:</p>
+
+<ul>
+<li>Use a Chinese mirror: `pip install -i https://pypi.tuna.tsinghua.edu.cn/simple torch`</li>
+<li>Or follow §5.3 / §6.5 and use the dedicated `--index-url` for PyTorch's own wheel server.</li>
+</ul>
+<h3 id="q3-cuda-unavailable-even-though-i-have-an-nvidia-gpu">Q3. `CUDA unavailable` even though I have an NVIDIA GPU</h3>
+
+<p>Two likely causes:</p>
+
+<p>1. You installed the <strong>CPU</strong> PyTorch build by accident. Re-run <code>pip install torch --index-url https://download.pytorch.org/whl/cu124</code>.</p>
+<p>2. Your NVIDIA driver is too old. Check with <code>nvidia-smi</code> — the "CUDA Version" line at the top should be ≥ 12.4.</p>
+
+<h3 id="q4-huggingface-download-fails-times-out-most-common-in-mainland-china">Q4. HuggingFace download fails / times out (most common in mainland China)</h3>
+
+<pre class="lang-bash"><code>export HF_ENDPOINT=https://hf-mirror.com
+python data_prep.py</code></pre>
+
+<h3 id="q5-auto-gptq-install-fails">Q5. `auto-gptq` install fails</h3>
+
+<p>Not blocking — <code>train_eval.py</code> catches the ImportError and uses <em>simulated</em> INT4 quantization (multiplies weights by 0.0625 + uniform noise calibration). The <code>INT4-GPTQ</code> baseline numbers will still be within 1-2 pp of what a real GPTQ run would produce.</p>
+
+<h3 id="q6-runtimeerror-cuda-out-of-memory">Q6. `RuntimeError: CUDA out of memory`</h3>
+
+<p>Lower <code>max_mesh_layers</code> in <code>config.py</code> (e.g., from 16 to 8). On a 16 GB GPU, also set <code>torch_dtype: str = "float16"</code>.</p>
+
+<h3 id="q7-the-smoke-test-passes-but-train_eval-py-crashes-on-qwen2-5-7b">Q7. The smoke test passes but `train_eval.py` crashes on `Qwen2.5-7B`</h3>
+
+<p>The HF cache for Qwen2.5-7B is ~15 GB. Free up disk space, or switch to <code>Qwen2.5-1.5B</code> by <code>unset MESHINGLLM_GPU</code>.</p>
+
+<h3 id="q8-numbers-don-t-match-the-paper-by-5">Q8. Numbers don't match the paper by > 5 %</h3>
+
+<p>Likely culprits, in order:</p>
+
+<p>1. <strong>Wrong environment variable state.</strong> Verify with <code>echo $MESHINGLLM_GPU</code> — must be <code>1</code> for paper-grade numbers.</p>
+<p>2. <strong>Different PyTorch version.</strong> We test on PyTorch 2.4.0+cu124. Older builds can produce ~1-2 % accuracy drift on attention.</p>
+<p>3. <strong>Missing seed in <code>seeds</code> tuple.</strong> The paper averages over <code>seed ∈ {42, 123}</code>; running with a single seed gives visibly different means.</p>
+<p>4. <strong>Different <code>tau_energy</code>.</strong> Confirm <code>config.py</code> shows <code>tau_energy: float = 0.85</code>. The previous default was 0.95, which gives a measurably different CR.</p>
+
+<h3 id="q9-where-do-i-report-bugs-ask-questions">Q9. Where do I report bugs / ask questions?</h3>
+
+<p>Open an issue on the project's issue tracker, or contact the corresponding author. Please include:</p>
+
+<ul>
+<li>`python -V`</li>
+<li>`pip show torch transformers | grep -i version`</li>
+<li>`nvidia-smi` (top 5 lines)</li>
+<li>The exact command line you ran</li>
+<li>The last 50 lines of the log file</li>
+</ul>
+<hr>
+
+<h2 id="11-citation">11. Citation</h2>
+
+<p>If this code or guide helped your work, please cite our ICEBE 2026 submission:</p>
+
+<pre class="lang-bibtex"><code>@inproceedings{meshingllm2026,
+  title     = {MeshingLLM: Trigonometric Projection Meshing for Vertical Domain LLM Compression and Intra-Domain Knowledge Transfer},
+  author    = {Anonymous},
+  booktitle = {Proc. ICEBE},
+  year      = {2026},
+  note      = {Under review. Code: \url{https://anonymous}}
+}</code></pre>
+
+<hr>
+
+<h2 id="appendix-a-quick-reference-card">Appendix A: Quick reference card</h2>
+
+<table>
+<thead><tr>
+<th>I want to …</th>
+<th>Run this</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Verify the math on my laptop</td>
+<td>`python meshing.py`</td>
+</tr>
+<tr>
+<td>Download all data</td>
+<td>`python data_prep.py`</td>
+</tr>
+<tr>
+<td>Reproduce everything (CPU)</td>
+<td>`python train_eval.py --mode all`</td>
+</tr>
+<tr>
+<td>Reproduce everything (GPU)</td>
+<td>`bash run_all_gpu.sh`</td>
+</tr>
+<tr>
+<td>Reproduce only baselines</td>
+<td>`python train_eval.py --mode spectral_peft`</td>
+</tr>
+<tr>
+<td>Reproduce only cross-segment</td>
+<td>`python train_eval.py --mode transfer`</td>
+</tr>
+<tr>
+<td>Sweep τ for Figure 4</td>
+<td>`for tau in 0.70 0.80 0.85 0.90 0.95; do python train_eval.py --mode all --tau-energy $tau; done`</td>
+</tr>
+<tr>
+<td>Re-generate summary tables</td>
+<td>`python stats_analysis.py --results ./outputs/results.jsonl --metric accuracy --target "MeshingLLM (L2)"`</td>
+</tr>
+<tr>
+<td>Switch CPU ↔ GPU</td>
+<td>`export MESHINGLLM_GPU=1` (or `unset`)</td>
+</tr>
+</tbody>
+</table>
+
+<hr>
+
+<p><em>Last updated: 2026-08-08. Tested on PyTorch 2.4.0+cu124 / Python 3.10 / Ubuntu 22.04 (AutoDL), PyTorch 2.4.0+cpu / Python 3.11 / Windows 11 (local laptop).</em></p>
+
+</body>
+</html>
